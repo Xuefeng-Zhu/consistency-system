@@ -1,18 +1,1 @@
-{
-    "A": {
-        "delay": 3,
-        "port": 2001
-    },
-    "C": {
-        "delay": 4,
-        "port": 2003
-    },
-    "B": {
-        "delay": 10,
-        "port": 2002
-    },
-    "D": {
-        "delay": 3,
-        "port": 2001
-    }
-}
+{"A": {"delay": 3, "port": 2001}, "C": {"delay": 4, "port": 2003}, "B": {"delay": 2, "port": 2002}, "D": {"delay": 3, "port": 2004}}
