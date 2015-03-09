@@ -3,7 +3,7 @@ import json
 import socket
 import pickle
 from functools import wraps
-from threading import Thread
+from threading import Thread, Lock
 from Queue import Queue
 from message import Message
 from datetime import datetime, timedelta
@@ -90,6 +90,8 @@ class LinearizableWrapper:
         if self.name == "Server":
             try:
                 self.server = Server(name, self.server_callback)
+                self.lock = Lock()
+                self.waiting_for = ""
                 #todo: server init
             except KeyError:
                 print "Error: server not defined in config file"
@@ -103,6 +105,7 @@ class LinearizableWrapper:
                 sys.exit(-1)
         self.store = {}
 
+    @thread_func
     def server_callback(self, sender, message):
         """
         Iterates through all clients and bcasts the message
@@ -111,9 +114,22 @@ class LinearizableWrapper:
 
         totally ordered bcast is achieved by a system
         of "blocking" until original process ack is received
+
+        the self.lock locks both the execution of a message send
+        AND the shared variable waiting_for. This is to allow
+        threads to yield
         """
+        my_turn = False
         payload = message.content
         payload_tokens = payload.split()
+        while not my_turn:
+            self.lock.acquire()
+            if not self.waiting_for == "" and not self.waiting_for == payload_tokens[0]:
+                self.lock.release()
+                sleep(0) #a sleep(0) yields thread control so something else can be scheduled
+            else:
+                my_turn = True
+
         if payload_tokens[0] == "insert" or payload_tokens[0] == "update":
             pass
         elif payload_tokens[0] == "get":
@@ -124,6 +140,7 @@ class LinearizableWrapper:
             pass
         elif payload_tokens[0] == "delete":
             pass
+        self.lock.release()
 
     def client_callback(self, sender, message):
         payload = message.content
